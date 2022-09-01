@@ -1,2 +1,15 @@
 *.class
 *.log
+<<<<<<< HEAD
+=======
+**/.idea/
+**/.vscode/
+**/.bsp/
+**/.metals/
+**/project/target/
+**/project/project/
+**/target/
+**/.bloop/
+**/metals.sbt
+*.sc
+>>>>>>> c078e87 (Add some backend/shared/frontend)
