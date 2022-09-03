@@ -14,7 +14,6 @@ object Main extends App:
   val rootNode: dom.Element = dom.document.querySelector("#root")
   val headNode: dom.Element = dom.document.querySelector("head")
 
-  given appState: AppState   = AppState.init
   given router: Router[Page] = Routes.router
 
   render(
@@ -27,7 +26,7 @@ object Main extends App:
   )
 
   import styles.given
-  def app(using appState: AppState)(using router: Router[Page]) =
+  def app(using router: Router[Page]) =
     div(
       styles.Global.container,
       nav(
