@@ -1,4 +1,4 @@
-package client.pages
+package olybot.client.pages
 
 import com.raquo.laminar.api.L.*
 import olybot.shared.Values.twitchSigninLink

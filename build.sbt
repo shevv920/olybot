@@ -1,11 +1,11 @@
 val scala3Version    = "3.1.3"
 val zioConfigVersion = "3.0.2"
-val quillVersion     = "4.2.0"
+val quillVersion     = "4.3.0"
 val zioNioVersion    = "2.0.0+1-7c803ecb-SNAPSHOT"
 val zioVersion       = "2.0.1"
 val zhttpVersion     = "2.0.0-RC11"
 val zioJsonVersion   = "0.3.0-RC10"
-val flywayVersion    = "9.1.6"
+val flywayVersion    = "9.2.0"
 val laminextVersion  = "0.14.3"
 
 ThisBuild / scalaVersion := scala3Version
@@ -88,12 +88,12 @@ lazy val frontend = project
       "com.github.japgolly.scalacss" %%% "core"            % "1.0.0",
     ),
     scalaJSUseMainModuleInitializer := true,
-    scalaJSLinkerConfig in (Compile, fastOptJS) ~= {
+    Compile / fastOptJS / scalaJSLinkerConfig ~= {
       _.withESFeatures(
         _.withAvoidLetsAndConsts(false)
           .withAvoidClasses(false)
           .withESVersion(org.scalajs.linker.interface.ESVersion.ES2021)
-      ).withPrettyPrint(true)
+      ).withPrettyPrint(false)
         .withClosureCompilerIfAvailable(false)
         .withOptimizer(false)
         .withCheckIR(true)

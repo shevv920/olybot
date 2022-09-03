@@ -1,12 +1,14 @@
-package client
+package olybot.client
 
-import client.components.*
+import olybot.client.components.*
 import com.raquo.laminar.CollectionCommand
 import com.raquo.laminar.api.L.*
 import com.raquo.laminar.nodes.ReactiveHtmlElement
 import io.laminext.fetch.{ Fetch, FetchResponse }
 import io.laminext.syntax.core.*
 import org.scalajs.dom.html.Element
+import org.scalajs.dom
+import com.raquo.waypoint.Router
 import zio.json.*
 
 import scala.util.{ Failure, Success }
@@ -22,7 +24,7 @@ object Pages:
   case object NotFound                         extends Page
   case object Logout                           extends Page
 
-  def renderPage(page: Page): ReactiveHtmlElement[Element] =
+  def renderPage(page: Page)(using router: Router[Page]): ReactiveHtmlElement[Element] =
     page match {
       case Home                      => pages.Home.element
       case Signin                    => pages.Signin.element
@@ -30,7 +32,20 @@ object Pages:
       case NotFound                  => div("page not found")
       case Logout =>
         div(
-          Router.navigateTo(Signin),
+          navigateTo(Signin),
           None,
         )
+    }
+
+  inline def navigateTo(page: Page)(using router: Router[Page]): Binder[HtmlElement] =
+    Binder { el =>
+      val isLinkElement = el.ref.isInstanceOf[dom.html.Anchor]
+
+      if (isLinkElement) {
+        el.amend(href(router.absoluteUrlForPage(page)))
+      }
+      (onClick
+        .filter(ev => !(isLinkElement && (ev.ctrlKey || ev.metaKey || ev.shiftKey || ev.altKey)))
+        .preventDefault
+        --> (_ => router.pushState(page))).bind(el)
     }

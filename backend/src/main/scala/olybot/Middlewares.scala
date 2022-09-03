@@ -1,14 +1,20 @@
 package olybot
 
 import olybot.repositories.{ Account, AccountRepo }
+import olybot.shared.protocol.TokenUser
 import zhttp.http.*
-import zhttp.http.middleware.HttpMiddleware
+import zhttp.http.middleware.{ Cors, HttpMiddleware }
 import zhttp.http.Middleware.interceptZIOPatch
 import zio.{ Clock, ZIO }
 import zio.json.*
 
 object Middlewares:
-  val middlewares: Middleware[Any, Nothing, Request, Response, Request, Response] = logger ++ Middleware.cors()
+  val middlewares: Middleware[Any, Nothing, Request, Response, Request, Response] =
+    logger ++ Middleware.cors(config =
+      Cors
+        .CorsConfig()
+        .copy(allowedHeaders = Some(Set("*")))
+    )
 
   def logger: HttpMiddleware[Any, Nothing] =
     interceptZIOPatch(req => Clock.nanoTime.map(start => (req.method, req.url, start))) {
@@ -34,7 +40,3 @@ object Middlewares:
         yield AuthedRequest(account, request),
       response => ZIO.succeed(response),
     )
-
-  final case class TokenUser(userId: String)
-  object TokenUser:
-    given codec: JsonCodec[TokenUser] = DeriveJsonCodec.gen[TokenUser]

@@ -1,7 +1,7 @@
 package olybot
 
 import io.github.nremond.{ toHex, PBKDF2 }
-import olybot.Middlewares.TokenUser
+import olybot.shared.protocol.TokenUser
 import pdi.jwt.{ Jwt, JwtAlgorithm, JwtClaim }
 import zio.ZIO
 import zio.json.*

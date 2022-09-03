@@ -1,4 +1,4 @@
-package client.components
+package olybot.client.components
 
 import com.raquo.domtypes.generic.codecs.StringAsIsCodec
 import com.raquo.laminar.api.L.*

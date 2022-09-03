@@ -1,4 +1,4 @@
-package client
+package olybot.client
 
 import com.raquo.domtypes.generic.codecs.{ Codec, StringAsIsCodec }
 import com.raquo.laminar.api.L.*
@@ -11,7 +11,7 @@ import urldsl.language.PathQueryFragmentRepr
 import zio.json.*
 import io.laminext.syntax.core.*
 
-object Router {
+object Routes:
   import Pages.*
 
   val twSigninRoute: Route[TwitchSignin, FragmentPatternArgs[Unit, Unit, String]] =
@@ -37,29 +37,3 @@ object Router {
     $popStateEvent = windowEvents.onPopState,
     owner = unsafeWindowOwner,
   )
-
-  inline def navigateTo(page: Page): Binder[HtmlElement] =
-    Binder { el =>
-      val isLinkElement = el.ref.isInstanceOf[dom.html.Anchor]
-
-      if (isLinkElement) {
-        el.amend(href(router.absoluteUrlForPage(page)))
-      }
-      (onClick
-        .filter(ev => !(isLinkElement && (ev.ctrlKey || ev.metaKey || ev.shiftKey || ev.altKey)))
-        .preventDefault
-        --> (_ => router.pushState(page))).bind(el)
-    }
-
-  import styles.given
-  val container: ReactiveHtmlElement[Element] =
-    div(
-      styles.Global.container,
-      nav(
-        styles.Global.navigate,
-        a(navigateTo(Home), "Home"),
-      ),
-      child <-- router.$currentPage.map(renderPage),
-    )
-
-}

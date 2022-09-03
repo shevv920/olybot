@@ -1,4 +1,4 @@
-package client.components
+package olybot.client.components
 
 import com.raquo.laminar.api.L.*
 import com.raquo.laminar.nodes.ReactiveHtmlElement

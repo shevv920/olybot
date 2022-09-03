@@ -11,7 +11,7 @@ import zio.json.*
 import olybot.TwitchProtocol.TokenValidateResult.*
 import olybot.TwitchProtocol.TokenValidateResult
 import olybot.shared.Models.User
-import olybot.shared.Protocol.*
+import olybot.shared.protocol
 
 import java.time.temporal.ChronoUnit
 
@@ -20,48 +20,9 @@ object Main extends ZIOAppDefault:
   private val dataSourceLayer = Quill.DataSource.fromPrefix("database").tapError(e => ZIO.logInfo(e.getMessage))
   private val postgresLayer   = Quill.Postgres.fromNamingStrategy(io.getquill.CamelCase)
 
-  val login = Http.collectZIO[Request] { case req @ Method.POST -> !! / "signin" =>
-    for
-      body         <- req.body.asString
-      request      <- ZIO.fromEither(body.fromJson[Signin.Request]).mapError(new Throwable(_))
-      verifyResult <- TwitchAPI.validateToken(request.accessToken)
-      _            <- ZIO.logInfo(verifyResult.toString)
-      // TODO create or update account
-      res = verifyResult match {
-              case TokenValidateResult(
-                    Some(_),
-                    Some(_),
-                    Some(_),
-                    Some(userId),
-                    Some(_),
-                    _,
-                    _,
-                  ) =>
-                Security
-                  .jwtEncode(userId)
-                  .map(enc => Signin.Response.Success(enc))
-              case TokenValidateResult(_, _, _, _, _, Some(_), Some(message)) =>
-                ZIO.succeed(Signin.Response.Failure(message))
-              case _ =>
-                ZIO.succeed(Signin.Response.Failure("Unknown error"))
-            }
-      r <- res
-    yield Response.json(r.toJson)
-  }
+  private val routes = (Routes.public ++ Routes.authedApps)
 
-  val app = Http.collectZIO[Request] {
-    case Method.GET -> !! / "health" => ZIO.attempt(Response.ok)
-    case Method.GET -> !! / "account" / uuidPath(id) =>
-      for acc <- AccountRepo.getById(id)
-      yield Response.text(acc.toString)
-  }
-
-  private val authedApp: Http[Any, Nothing, AuthedRequest, Response] = Http.collect {
-    case AuthedRequest(acc, req @ Method.GET -> !! / "account" / "current") =>
-      Response.json(acc.map(acc => User(acc.twitchName, acc.twitchId)).toJson)
-  }
-
-  private val authedApps = authedApp @@ Middlewares.authMiddleware
+  val app = routes @@ Middlewares.middlewares
 
   override def run: ZIO[Any, Nothing, ExitCode] =
     (for
@@ -71,7 +32,7 @@ object Main extends ZIOAppDefault:
                  .repeat(Schedule.fixed(zio.Duration(1, ChronoUnit.HOURS))) // dev.twitch.tv recommendation
                  .fork
       appPort <- AppConfig.port
-      _       <- Server.start(appPort, (login ++ app ++ authedApps) @@ Middlewares.middlewares)
+      _       <- Server.start(appPort, app)
       _       <- twApi.await
       _       <- twc.interrupt
     yield ())

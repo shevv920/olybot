@@ -1,4 +1,4 @@
-package client.styles
+package olybot.client.styles
 
 import scalacss.DevDefaults._
 
