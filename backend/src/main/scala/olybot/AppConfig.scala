@@ -12,7 +12,7 @@ final case class AppConfig(
     @name("PWD_SK") pwdSecretKey: String,
 )
 
-object AppConfig {
+object AppConfig:
   private val configDescriptor = descriptor[AppConfig]
 
   def port: ZIO[AppConfig, Nothing, Int] = ZIO.serviceWith[AppConfig](_.port)
@@ -30,4 +30,3 @@ object AppConfig {
       )
     )
     .tapError(err => ZIO.logError(s"Config load error: $err"))
-}

@@ -1,7 +1,7 @@
 package olybot
 
 import twc.*
-import zio.{ Dequeue, Ref, ZIO }
+import zio.{ Dequeue, Promise, Ref, ZIO }
 import zhttp.service.Client
 import zhttp.http.Method
 import zio.json.*
@@ -9,7 +9,11 @@ import zio.json.*
 import scala.deriving.Mirror
 
 object TwitchChatClient:
-  def twitchEventsHandler(msqQ: Dequeue[IRCEvent], accessToken: String): ZIO[TwitchClient, Throwable, Nothing] =
+  def twitchEventsHandler(
+      msqQ: Dequeue[IRCEvent],
+      accessToken: String,
+      handlerStarted: Promise[Throwable, Boolean],
+  ): ZIO[TwitchClient, Throwable, Nothing] =
     (for
       msg <- msqQ.take
       _ <- msg match
@@ -27,16 +31,18 @@ object TwitchChatClient:
              case Ping(arg) =>
                TwitchClient.sendMessage(IRCMessage(Command.Pong, arg))
              case _ => ZIO.unit
+      _ <- handlerStarted.succeed(true)
     yield ()).forever
 
   val twitch =
     ZIO
       .scoped {
         for
-          twitchConfig  <- ZIO.service[TwitchConfig]
-          eventsDequeue <- TwitchClient.subscribe
-          handler       <- twitchEventsHandler(eventsDequeue, twitchConfig.chatAccessToken).fork
-          _             <- ZIO.sleep(zio.Duration.fromSeconds(1))
+          twitchConfig   <- ZIO.service[TwitchConfig]
+          eventsDequeue  <- TwitchClient.subscribe
+          handlerStarted <- Promise.make[Throwable, Boolean]
+          handler        <- twitchEventsHandler(eventsDequeue, twitchConfig.chatAccessToken, handlerStarted).fork
+          _              <- handlerStarted.await
 //          _             <- TwitchClient.connect("irc.chat.twitch.tv", 6667)
           _ <- handler.await
         yield ()

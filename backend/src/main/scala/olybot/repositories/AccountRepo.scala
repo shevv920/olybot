@@ -49,7 +49,7 @@ final case class AccountRepoLive(quill: QuillType) extends AccountRepo:
     run(accounts.filter(acc => acc.id == lift(id)).map(acc => Account(acc.id, acc.twitchId, acc.twitchName)))
       .map(_.headOption)
 
-  override def getByTwitchId(twitchId: String): ZIO[Any, SQLException, Option[Account]] = {
+  override def getByTwitchId(twitchId: String): ZIO[Any, SQLException, Option[Account]] =
     inline def q =
       quote {
         accounts
@@ -57,7 +57,6 @@ final case class AccountRepoLive(quill: QuillType) extends AccountRepo:
           .map(acc => Account(acc.id, acc.twitchId, acc.twitchName))
       }
     run(q).map(_.headOption)
-  }
 
   override def createOrUpdate(twitchId: String, twitchName: String): ZIO[Any, SQLException, Boolean] =
     inline def insertOrUpdate =
