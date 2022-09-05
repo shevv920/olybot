@@ -3,53 +3,47 @@ package olybot.client.pages
 import com.raquo.laminar.api.L.*
 import com.raquo.laminar.nodes.ReactiveHtmlElement
 import org.scalajs.dom.html.Element
+import org.scalajs.dom
 import io.laminext.syntax.core.*
-import io.laminext.fetch.Fetch
 import olybot.client.{ AppState, Main, StoredVar }
 import olybot.shared.Models.User
-import org.scalajs.dom
-import zio.json.*
-
-import scala.concurrent.duration.*
 import olybot.shared.protocol
 
 object Home:
-  import AppState.storedToken
-  val currentUser: EventStream[Option[User]] = storedToken.signal
-    .sample(storedToken.signal)
-    .flatMap {
-      case Some(token) =>
-        Fetch
-          .get("http://localhost:9000/account/current")
-          .addAuthorizationHeader(token)
-          .text
-          .map(
-            _.data
-              .fromJson[protocol.User.GetCurrent.Response]
-              .toOption
-              .collect {
-                case protocol.User.GetCurrent.Response.Success(user) => Some(user)
-                case protocol.User.GetCurrent.Response.Failure(_)    => None
-              }
-              .flatten
-          )
-      case None => EventStream.empty
-    }
-
+  import AppState.currentUser
   import olybot.client.styles.given
-  val element: ReactiveHtmlElement[Element] = div(
-    h2("Home", Styles.title),
+
+  def profileData =
     div(
       Styles.profile,
-      div(child.maybe <-- currentUser.map(user => user.map(_.name))),
-      div(child.maybe <-- currentUser.map(user => user.map(_.twitchId))),
-    ),
+      children <-- currentUser.map(mbUser =>
+        mbUser.fold(Seq.empty)(user =>
+          Seq(
+            span("Id:"),
+            span(user.id.toString),
+            span("Twitch id:"),
+            span(user.twitchId),
+            span("Twitch login:"),
+            span(user.name),
+          )
+        )
+      ),
+    )
+
+  val element: ReactiveHtmlElement[Element] = div(
+    Styles.container,
+    h2("Home", Styles.title),
+    profileData,
   )
 
   import scalacss.DevDefaults.*
-  object Styles extends StyleSheet.Inline {
+  object Styles extends StyleSheet.Inline:
     import dsl.*
     import olybot.client.styles.Colors
+
+    val container: StyleA = style(
+      padding(8.px)
+    )
 
     val title: StyleA = style(
       color(Colors.primary),
@@ -59,7 +53,8 @@ object Home:
 
     val profile: StyleA = style(
       display.grid,
-      gridTemplateRows := "auto auto auto",
+      gridTemplateColumns := "auto auto",
+      gridTemplateRows    := "auto auto auto",
       gap(8.px),
+      color(Colors.fgPrimary),
     )
-  }

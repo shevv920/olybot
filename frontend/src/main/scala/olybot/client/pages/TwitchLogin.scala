@@ -19,25 +19,29 @@ object TwitchLogin:
   def element(fragment: String)(using router: Router[Page]): ReactiveHtmlElement[Element] =
     fragment match
       case tokenRegexp(token) =>
+        val signinResult = Fetch
+          .post(
+            "http://localhost:9000/signin",
+            body = ToRequestBody.stringRequestBody(protocol.Signin.Request(token).toJson),
+          )
+          .text
+          .map(
+            _.data
+              .fromJson[protocol.Signin.Response]
+              .toOption
+              .collect {
+                case protocol.Signin.Response.Success(t)      => Some(t)
+                case protocol.Signin.Response.Failure(reason) => None
+              }
+              .flatten
+          )
+          .map(s => (_: Option[String]) => s)
         div(
-          Fetch
-            .post(
-              "http://localhost:9000/signin",
-              body = ToRequestBody.stringRequestBody(protocol.Signin.Request(token).toJson),
-            )
-            .text
-            .map(
-              _.data
-                .fromJson[protocol.Signin.Response]
-                .toOption
-                .collect {
-                  case protocol.Signin.Response.Success(t)      => Some(t)
-                  case protocol.Signin.Response.Failure(reason) => None
-                }
-                .flatten
-            )
-            .map(s => (_: Option[String]) => s) --> AppState.storedToken.observer,
-          Pages.navigateTo(Home),
-          div(child.text <-- AppState.storedToken.signal.map(_.toJson)),
+          signinResult --> AppState.storedToken.observer,
+          signinResult --> { _ => router.pushState(Home) },
         )
-      case _ => div(Pages.navigateTo(Pages.Signin))
+      case _ =>
+        div(child.maybe <-- Signal.fromValue {
+          router.pushState(Pages.Signin)
+          None
+        })

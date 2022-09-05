@@ -3,10 +3,10 @@ package olybot.client
 import com.raquo.laminar.api.L.*
 import com.raquo.waypoint.Router
 import io.laminext.syntax.core.*
+import org.scalajs.dom
 import olybot.client.Pages.Page
 import olybot.client.pages.Home
 import olybot.shared.Models.User
-import org.scalajs.dom
 
 object Main extends App:
   val CssSettings = scalacss.devOrProdDefaults
@@ -32,6 +32,9 @@ object Main extends App:
       nav(
         styles.Global.navigate,
         a(Pages.navigateTo(Pages.Home), "Home"),
+        child.maybe <-- AppState.currentUser.map(cu =>
+          cu.map(_ => button("Logout", thisEvents(onClick) --> { _ => AppState.storedToken.set(None) }))
+        ),
       ),
       child <-- router.$currentPage.map(Pages.renderPage),
     )
