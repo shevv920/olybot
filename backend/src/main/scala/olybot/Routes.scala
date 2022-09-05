@@ -40,7 +40,7 @@ object Routes:
     case AuthedRequest(mbAccount, req @ Method.GET -> !! / "account" / "current") =>
       val res = mbAccount match
         case None      => protocol.User.GetCurrent.Response.Failure("not found")
-        case Some(acc) => protocol.User.GetCurrent.Response.Success(User(acc.id, acc.twitchName, acc.twitchId))
+        case Some(acc) => protocol.User.GetCurrent.Response.Success(User(acc.id, acc.twitchName, acc.twitchId, acc.botEnabled, acc.botApproved))
       Response.json(res.toJson)
   }
 

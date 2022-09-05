@@ -25,6 +25,10 @@ object Home:
             span(user.twitchId),
             span("Twitch login:"),
             span(user.name),
+            span("Bot enabled:"),
+            span(user.botEnabled.toString),
+            span("Bot approved:"),
+            span(user.botApproved.toString),
           )
         )
       ),

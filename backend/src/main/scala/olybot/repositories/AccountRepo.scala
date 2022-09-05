@@ -9,7 +9,13 @@ import javax.sql.DataSource
 import io.getquill.{ EntityQuery, Quoted }
 import zio.ULayer
 
-final case class Account(id: UUID, twitchId: String, twitchName: String)
+final case class Account(
+    id: UUID,
+    twitchId: String,
+    twitchName: String,
+    botEnabled: Boolean = false,
+    botApproved: Boolean = false,
+)
 
 trait AccountRepo extends Resource:
   def getById(id: UUID): ZIO[Any, SQLException, Option[Account]]
@@ -46,7 +52,10 @@ final case class AccountRepoLive(quill: QuillType) extends AccountRepo:
     )
 
   override def getById(id: UUID): ZIO[Any, SQLException, Option[Account]] =
-    run(accounts.filter(acc => acc.id == lift(id)).map(acc => Account(acc.id, acc.twitchId, acc.twitchName)))
+    run(
+      accounts
+        .filter(acc => acc.id == lift(id))
+    )
       .map(_.headOption)
 
   override def getByTwitchId(twitchId: String): ZIO[Any, SQLException, Option[Account]] =
@@ -54,7 +63,6 @@ final case class AccountRepoLive(quill: QuillType) extends AccountRepo:
       quote {
         accounts
           .filter(acc => acc.twitchId == lift(twitchId))
-          .map(acc => Account(acc.id, acc.twitchId, acc.twitchName))
       }
     run(q).map(_.headOption)
 

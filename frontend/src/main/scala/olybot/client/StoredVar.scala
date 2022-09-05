@@ -6,7 +6,7 @@ import org.scalajs.dom
 import zio.json.*
 
 class StoredVar[T: JsonCodec](name: String, initial: T) {
-  private val storageId = s"[StoredString]$name"
+  private val storageId = s"$name"
   private val updateBus = new EventBus[T => T]()
 
   val signal: Signal[T] =
@@ -23,7 +23,7 @@ class StoredVar[T: JsonCodec](name: String, initial: T) {
         newValue
       }
   def observer: WriteBus[T => T] = updateBus.writer
-  
+
   def update(f: T => T): Unit = updateBus.writer.onNext(f)
   def set(newValue: T): Unit  = updateBus.writer.onNext(_ => newValue)
 }

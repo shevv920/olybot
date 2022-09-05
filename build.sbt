@@ -1,4 +1,4 @@
-val scala3Version    = "3.1.3"
+val scala3Version    = "3.2.0"
 val zioConfigVersion = "3.0.2"
 val quillVersion     = "4.3.0"
 val zioNioVersion    = "2.0.0+1-7c803ecb-SNAPSHOT"
@@ -21,7 +21,7 @@ lazy val twitchClient = project
   .in(file("./twitch-client"))
   .settings(
     name         := "twc",
-    scalaVersion := "3.1.3",
+    scalaVersion := scala3Version,
     resolvers +=
       "Sonatype OSS Snapshots" at "https://oss.sonatype.org/content/repositories/snapshots",
     libraryDependencies ++= Seq(
@@ -37,7 +37,7 @@ lazy val backend = project
   .in(file("./backend"))
   .settings(
     name         := "backend",
-    scalaVersion := "3.1.3",
+    scalaVersion := scala3Version,
     libraryDependencies ++= Seq(
       "org.postgresql"        % "postgresql"          % "42.4.2",
       "org.slf4j"             % "slf4j-nop"           % "1.7.36",
@@ -65,7 +65,7 @@ lazy val shared = crossProject(JSPlatform, JVMPlatform)
   .in(file("./shared"))
   .enablePlugins(ScalaJSPlugin)
   .settings(
-    scalaVersion := "3.1.3",
+    scalaVersion := scala3Version,
     scalaJSLinkerConfig ~= { _.withSourceMap(false) },
     scalaJSLinkerConfig ~= { _.withModuleKind(ModuleKind.ESModule) },
     libraryDependencies ++= Seq(
