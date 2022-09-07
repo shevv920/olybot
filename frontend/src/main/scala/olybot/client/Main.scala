@@ -6,6 +6,7 @@ import io.laminext.syntax.core.*
 import org.scalajs.dom
 import olybot.client.Pages.Page
 import olybot.client.pages.Home
+import olybot.client.components.Button
 import olybot.shared.Models.User
 
 object Main extends App:
@@ -32,9 +33,13 @@ object Main extends App:
       nav(
         styles.Global.navigate,
         a(Pages.navigateTo(Pages.Home), "Home"),
-        child.maybe <-- AppState.currentUser.map(cu =>
-          cu.map(_ => button("Logout", thisEvents(onClick) --> { _ => AppState.storedToken.set(None) }))
-        ),
+        child.maybe <-- AppState.$currentUser.map(_ => None),
+        child <-- AppState.currentUser.signal.map {
+          case Some(u) =>
+            Button("Logout", typ = "submit", thisEvents(onClick) --> { _ => AppState.storedToken.set(None) })
+          case None =>
+            Button("Signin", "button", thisEvents(onClick) --> { _ => Routes.router.pushState(Pages.Signin) })
+        },
       ),
       child <-- router.$currentPage.map(Pages.renderPage),
     )

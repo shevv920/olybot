@@ -39,9 +39,17 @@ object Routes:
   private val authed: Http[Any, Throwable, AuthedRequest, Response] = Http.collect {
     case AuthedRequest(mbAccount, req @ Method.GET -> !! / "account" / "current") =>
       val res = mbAccount match
-        case None      => protocol.User.GetCurrent.Response.Failure("not found")
-        case Some(acc) => protocol.User.GetCurrent.Response.Success(User(acc.id, acc.twitchName, acc.twitchId, acc.botEnabled, acc.botApproved))
+        case None => protocol.User.GetCurrent.Response.Failure("not found")
+        case Some(acc) =>
+          protocol.User.GetCurrent.Response
+            .Success(User(acc.id, acc.twitchName, acc.twitchId, acc.botEnabled, acc.botApproved))
       Response.json(res.toJson)
   }
 
-  val authedApps = authed @@ Middlewares.authMiddleware
+  private val authedZIO: Http[AccountRepo, Throwable, AuthedRequest, Response] = Http.collectZIO {
+    case AuthedRequest(Some(acc), req @ Method.PUT -> !! / "account" / "toggle-bot-enabled") =>
+      for _ <- AccountRepo.updateBotEnabled(acc.id, !acc.botEnabled)
+      yield Response.json((!acc.botEnabled).toJson)
+  }
+
+  val authedApps = authed @@ Middlewares.authMiddleware ++ authedZIO @@ Middlewares.authMiddleware

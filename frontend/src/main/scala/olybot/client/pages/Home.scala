@@ -5,18 +5,18 @@ import com.raquo.laminar.nodes.ReactiveHtmlElement
 import org.scalajs.dom.html.Element
 import org.scalajs.dom
 import io.laminext.syntax.core.*
-import olybot.client.{ AppState, Main, StoredVar }
+import olybot.client.{ ApiClient, AppState, Main, StoredVar }
 import olybot.shared.Models.User
 import olybot.shared.protocol
+import olybot.client.components.*
 
 object Home:
-  import AppState.currentUser
   import olybot.client.styles.given
 
   def profileData =
     div(
       Styles.profile,
-      children <-- currentUser.map(mbUser =>
+      children <-- AppState.currentUser.signal.map(mbUser =>
         mbUser.fold(Seq.empty)(user =>
           Seq(
             span("Id:"),
@@ -26,9 +26,27 @@ object Home:
             span("Twitch login:"),
             span(user.name),
             span("Bot enabled:"),
-            span(user.botEnabled.toString),
+            ToggleButton(
+              "Disable",
+              "Enable",
+              AppState.currentUser.signal.map {
+                case Some(u) => u.botEnabled
+                case None    => false
+              },
+              inContext { thisNode =>
+                val $click: EventStream[Boolean] =
+                  thisNode
+                    .events(onClick)
+                    .debounce(500)
+                    .flatMapTo(ApiClient.toggleBotEnabled)
+
+                $click --> Observer { (v: Boolean) =>
+                  AppState.currentUser.writer.onNext(Some(user.copy(botEnabled = v)))
+                }
+              },
+            ),
             span("Bot approved:"),
-            span(user.botApproved.toString),
+            div(if user.botApproved then span("✅") else span("❌")),
           )
         )
       ),
@@ -57,7 +75,7 @@ object Home:
 
     val profile: StyleA = style(
       display.grid,
-      gridTemplateColumns := "auto auto",
+      gridTemplateColumns := "max-content max-content",
       gridTemplateRows    := "auto auto auto",
       gap(8.px),
       color(Colors.fgPrimary),

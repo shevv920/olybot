@@ -22,6 +22,7 @@ trait AccountRepo extends Resource:
   def getByTwitchId(twitchId: String): ZIO[Any, SQLException, Option[Account]]
   def get(limit: Limit, page: Page): ZIO[Any, SQLException, List[Account]]
   def createOrUpdate(twitchId: String, twitchName: String): ZIO[Any, SQLException, Boolean]
+  def updateBotEnabled(id: UUID, enabled: Boolean): ZIO[Any, SQLException, Boolean]
 
 object AccountRepo:
   def getById(id: UUID): ZIO[AccountRepo, SQLException, Option[Account]] =
@@ -32,6 +33,9 @@ object AccountRepo:
 
   def createOrUpdate(twitchId: String, twitchName: String): ZIO[AccountRepo, SQLException, Boolean] =
     ZIO.serviceWithZIO[AccountRepo](_.createOrUpdate(twitchId, twitchName))
+
+  def updateBotEnabled(id: UUID, enabled: Boolean): ZIO[AccountRepo, SQLException, Boolean] =
+    ZIO.serviceWithZIO[AccountRepo](_.updateBotEnabled(id, enabled))
 
   val layer =
     ZLayer
@@ -73,5 +77,14 @@ final case class AccountRepoLive(quill: QuillType) extends AccountRepo:
           .insert(_.twitchId -> lift(twitchId), _.twitchName -> lift(twitchName))
           .onConflictUpdate(_.twitchId)((a, _) => a.twitchName -> lift(twitchName))
       }
-
     run(insertOrUpdate).map(_ > 0)
+
+  override def updateBotEnabled(id: UUID, enabled: Boolean): ZIO[Any, SQLException, Boolean] = 
+    inline def update =
+      quote {
+        accounts
+          .filter(_.id == lift(id))
+          .update(_.botEnabled -> lift(enabled))
+      }
+    run(update).as(enabled)
+    

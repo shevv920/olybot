@@ -12,8 +12,9 @@ import olybot.shared.protocol.User.GetCurrent
 object AppState:
   val storedToken: StoredVar[Option[String]] = StoredVar("apiKey", None)
 
-  val currentUser: EventStream[Option[User]] = storedToken.signal
-    .sample(storedToken.signal)
+  val currentUser: Var[Option[User]] = Var(None)
+
+  val $currentUser: EventStream[Option[User]] = storedToken.signal
     .flatMap {
       case Some(token) =>
         Fetch
@@ -25,10 +26,17 @@ object AppState:
               .fromJson[GetCurrent.Response]
               .toOption
               .collect {
-                case GetCurrent.Response.Success(user) => Some(user)
-                case GetCurrent.Response.Failure(_)    => None
+                case GetCurrent.Response.Success(user) =>
+                  currentUser.writer.onNext(Some(user))
+                  None
+                case GetCurrent.Response.Failure(_) =>
+                  currentUser.writer.onNext(None)
+                  None
               }
               .flatten
           )
-      case None => EventStream.fromValue(None)
+
+      case None =>
+        currentUser.writer.onNext(None)
+        EventStream.fromValue(None)
     }
